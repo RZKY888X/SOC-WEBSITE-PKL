@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String?
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model sensors {
+  id        Int       @id @default(autoincrement())
+  objid     Int?
+  device    String?
+  sensor    String?
+  lastvalue String?
+  status    String?
+  message   String?
+  timestamp DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model sensor_logs {
+  id        Int       @id @default(autoincrement())
+  device    String?
+  sensor    String?
+  value     String?
+  timestamp DateTime? @default(now())
+}
+
