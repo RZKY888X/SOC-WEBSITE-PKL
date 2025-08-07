@@ -17,6 +17,7 @@ export default function HamburgerMenu() {
     { href: "/ticket", label: "Ticket" },
     { href: "/sla", label: "Sla" },
     { href: "/account", label: "Account" },
+    { href: "/user-management", label: "User Managements" },
   ];
 
   return (

@@ -10,7 +10,7 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from "@/app/components/ui/breadcrumb";
 
 export function BreadcrumbDynamic() {
   const pathname = usePathname();

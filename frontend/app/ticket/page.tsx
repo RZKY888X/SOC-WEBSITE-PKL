@@ -1,50 +1,74 @@
-'use client';
+//page.tsx
+"use client";
 
-import { useEffect, useState } from 'react';
-import TicketDetail from './TicketDetail';
+import { useEffect, useState } from "react";
+import TicketDetail from "./TicketDetail";
 
-type Ticket = {
+type SensorData = {
+  sensor: string;
+  device: string;
+  status: "Down" | "Warning" | "OK";
+  lastcheck?: string;
+};
+
+export type Ticket = {
   id: number;
   title: string;
-  status: string;
-  priority: string;
+  status: "Open" | "In Progress" | "Resolved";
+  priority: "High" | "Medium" | "Low";
   sensor: string;
   assignedTo: string;
   updatedAt: string;
+  description?: string;
 };
 
 export default function TicketPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [priorityFilter, setPriorityFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
 
   useEffect(() => {
     async function fetchTickets() {
-      const res = await fetch('http://localhost:3001/api/sensors');
-      const data = await res.json();
+      try {
+        const res = await fetch("http://localhost:3001/api/sensors");
+        const data: unknown = await res.json();
 
-      const mapped = data.map((item: any, index: number) => ({
-        id: index + 1,
-        title: `${item.sensor} - ${item.device}`,
-        status:
-          item.status === 'Down'
-            ? 'Open'
-            : item.status === 'Warning'
-            ? 'In Progress'
-            : 'Resolved',
-        priority:
-          item.status === 'Down'
-            ? 'High'
-            : item.status === 'Warning'
-            ? 'Medium'
-            : 'Low',
-        sensor: item.sensor,
-        assignedTo: 'Auto',
-        updatedAt: item.lastcheck?.split(' ')[0] || 'Unknown',
-      }));
+        if (!Array.isArray(data)) {
+          console.error("Invalid data format");
+          return;
+        }
 
-      setTickets(mapped);
+        const mapped = (data as SensorData[]).map((item, index) => {
+          const status =
+            item.status === "Down"
+              ? "Open"
+              : item.status === "Warning"
+              ? "In Progress"
+              : "Resolved";
+
+          const priority =
+            item.status === "Down"
+              ? "High"
+              : item.status === "Warning"
+              ? "Medium"
+              : "Low";
+
+          return {
+            id: index + 1,
+            title: `${item.sensor} - ${item.device}`,
+            status,
+            priority,
+            sensor: item.sensor,
+            assignedTo: "Auto",
+            updatedAt: item.lastcheck?.split(" ")[0] || "Unknown",
+          } satisfies Ticket;
+        });
+
+        setTickets(mapped);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
     }
 
     fetchTickets();
@@ -52,14 +76,16 @@ export default function TicketPage() {
 
   const filteredTickets = tickets.filter((ticket) => {
     const matchStatus = statusFilter ? ticket.status === statusFilter : true;
-    const matchPriority = priorityFilter ? ticket.priority === priorityFilter : true;
+    const matchPriority = priorityFilter
+      ? ticket.priority === priorityFilter
+      : true;
     return matchStatus && matchPriority;
   });
 
   useEffect(() => {
-    document.body.style.overflow = selectedTicket ? 'hidden' : 'auto';
+    document.body.style.overflow = selectedTicket ? "hidden" : "auto";
     return () => {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = "auto";
     };
   }, [selectedTicket]);
 
@@ -105,7 +131,6 @@ export default function TicketPage() {
             className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
             onClick={() => setSelectedTicket(null)}
           />
-
           <div className="fixed top-0 right-0 w-full md:w-[400px] h-full bg-slate-900 z-50 shadow-xl overflow-y-auto transform transition-transform duration-300 ease-in-out">
             <TicketDetail
               ticket={selectedTicket}
@@ -143,11 +168,11 @@ export default function TicketPage() {
               <td className="p-3">
                 <span
                   className={`px-2 py-1 rounded text-xs ${
-                    ticket.priority === 'High'
-                      ? 'bg-red-700'
-                      : ticket.priority === 'Medium'
-                      ? 'bg-yellow-600'
-                      : 'bg-green-700'
+                    ticket.priority === "High"
+                      ? "bg-red-700"
+                      : ticket.priority === "Medium"
+                      ? "bg-yellow-600"
+                      : "bg-green-700"
                   }`}
                 >
                   {ticket.priority}
@@ -165,7 +190,7 @@ export default function TicketPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table>  
     </div>
   );
 }

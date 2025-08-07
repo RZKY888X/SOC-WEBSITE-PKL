@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useSession, signOut } from 'next-auth/react';
-import { LogOut, User2Icon } from 'lucide-react';
+import { useSession, signOut } from "next-auth/react";
+import { LogOut, Pencil } from "lucide-react";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -11,25 +11,54 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-6 bg-[#0f172a] min-h-screen text-white">
-      <h2 className="text-lg font-semibold mb-4">Profile Account</h2>
-      <div className="flex flex-col items-center bg-[#1c2530] p-4 rounded-xl gap-4 mb-6">
-        <div className="bg-white rounded-full w-12 h-12 flex items-center justify-center">
-        <User2Icon className="w-6 h-6 text-black"/>
+    <div className="bg-[#0f172a] min-h-screen px-4 py-8 text-white">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold">PRESSOC</h1>
+      </div>
+
+      {/* Account Card */}
+      <div className="bg-[#1c2530] p-6 rounded-lg shadow-md">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Account Settings</h2>
+          <Pencil className="w-5 h-5 text-white cursor-pointer" />
         </div>
-        <span className="text-lg font-semibold">
-          {session?.user?.name || 'Tidak diketahui'}
-        </span>
+
+        <div className="grid grid-cols-2 gap-4 text-sm sm:text-base">
+          <div className="text-gray-400">Name :</div>
+          <div>{session?.user?.name || "Tidak diketahui"}</div>
+
+          <div className="text-gray-400">Role :</div>
+          <div className="italic">Super Admin</div>
+
+          <div className="text-gray-400">Email Address :</div>
+          <div className="italic">{session?.user?.email || "Tidak diketahui"}</div>
+
+          <div className="text-gray-400">Last Login :</div>
+          <div className="italic">
+            {new Date().toLocaleString("en-US", {
+              month: "numeric",
+              day: "numeric",
+              year: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+              second: "numeric",
+              hour12: false,
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Logout Button */}
-      <button
-        onClick={handleLogout}
-        className="w-full bg-[#1c2530] text-red-500 font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-red-900/10 transition"
-      >
-        <LogOut className="w-5 h-5" />
-        Log out
-      </button>
+      <div className="mt-6">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 py-3 bg-[#1c2530] rounded-lg text-red-500 font-semibold hover:bg-red-900/10 transition"
+        >
+          <LogOut className="w-5 h-5" />
+          Log out
+        </button>
+      </div>
     </div>
   );
 }
