@@ -9,7 +9,7 @@ export default function AlertPage() {
   useEffect(() => {
     async function fetchAlerts() {
       try {
-        const res = await axios.get('http://localhost:3001/api/sensors/desktop');
+        const res = await axios.get('http://localhost:3001/api/sensors/');
         const sensors = res.data;
 
         // Filter hanya sensor yang status-nya bukan "3" (3 = OK)

@@ -66,9 +66,16 @@ export async function inviteUser(req, res) {
         from: '"SOC Dashboard" <your-email@gmail.com>',
         to: email,
         subject: "Invitation to SOC Dashboard",
-        html: `<p>You have been invited to SOC Dashboard as ${role}.</p>
-               <p>Click the link below to activate your account:</p>
-               <a href="${activationLink}">${activationLink}</a>`,
+        html: `
+  <p>Hello,</p>
+  <p>You have been invited to SOC Dashboard as <strong>${role}</strong>.</p>
+  <p>Please open the activation page at the following link:</p>
+  <p><a href="http://localhost:3000/activate">http://localhost:3000/activate</a></p>
+  <p>Then enter the following token to activate your account:</p>
+  <p><code style="font-size: 18px; color: #2b2b2b;">${token}</code></p>
+  <p>This token is valid until you activate your account.</p>
+`,
+
       });
 
       res.writeHead(200);

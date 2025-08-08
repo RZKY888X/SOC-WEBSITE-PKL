@@ -1,128 +1,137 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
 interface CreateInviteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultTab?: "create" | "invite";
 }
 
 export default function CreateInviteModal({
   isOpen,
   onClose,
-  defaultTab = "create",
 }: CreateInviteModalProps) {
-  const [activeTab, setActiveTab] = useState<"create" | "invite">(defaultTab);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [expiryDays, setExpiryDays] = useState(30);
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState('user');
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (isOpen) {
-      setActiveTab(defaultTab);
-      setEmail("");
-      setPassword("");
-      setExpiryDays(30);
+      setEmail('');
+      setRole('user');
+      setSuccessMessage('');
     }
-  }, [isOpen, defaultTab]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const isFormValid = () => email;
+
+  const handleSubmit = async () => {
+    if (!isFormValid()) return;
+
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:3001/api/invitation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, role }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Failed to send invite:', result);
+        setSuccessMessage(`❌ ${result.error || 'Failed to send invitation'}`);
+        return;
+      }
+
+      console.log('✅ Invitation sent successfully');
+      setSuccessMessage('✅ Invitation sent successfully!');
+    } catch (error) {
+      console.error('Error inviting user:', error);
+      setSuccessMessage('❌ Failed to send invitation');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setSuccessMessage('');
+    onClose();
+  };
 
   return (
     <div className='fixed inset-0 bg-black/60 z-50 flex items-center justify-center'>
       <div className='bg-[#0C1A2A] rounded-lg w-full max-w-md p-6 shadow-lg'>
-        <h2 className='text-white text-lg font-semibold mb-4'>
-          {activeTab === "create" ? "Create New Account" : "Invite User"}
-        </h2>
+        <h2 className='text-white text-lg font-semibold mb-4'>Invite User</h2>
 
-        {/* Tabs */}
-        <div className='flex border-b border-[#1a2e44] mb-4'>
-          <button
-            className={`flex-1 py-2 text-sm font-medium transition ${
-              activeTab === "create"
-                ? "text-white border-b-2 border-blue-500"
-                : "text-gray-400 hover:text-white"
-            }`}
-            onClick={() => setActiveTab("create")}
-          >
-            Create
-          </button>
-          <button
-            className={`flex-1 py-2 text-sm font-medium transition ${
-              activeTab === "invite"
-                ? "text-white border-b-2 border-blue-500"
-                : "text-gray-400 hover:text-white"
-            }`}
-            onClick={() => setActiveTab("invite")}
-          >
-            Invite
-          </button>
-        </div>
-
-        {/* Form Fields */}
-        <div className='space-y-4'>
-          {/* Email */}
-          <div>
-            <label className='block text-sm text-white mb-1'>Email</label>
-            <input
-              type='email'
-              placeholder='name@example.com'
-              className='w-full px-3 py-2 rounded bg-[#091521] text-white border border-[#1f2d3d] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm'
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+        {successMessage ? (
+          <div className='text-center'>
+            <p className='text-white mb-4'>{successMessage}</p>
+            <button
+              onClick={handleClose}
+              className='px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition'
+            >
+              OK
+            </button>
           </div>
+        ) : (
+          <>
+            {/* Email Input */}
+            <div className='space-y-4'>
+              <div>
+                <label className='block text-sm text-white mb-1'>Email</label>
+                <input
+                  type='email'
+                  placeholder='name@example.com'
+                  className='w-full px-3 py-2 rounded bg-[#091521] text-white border border-[#1f2d3d] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm'
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
 
-          {/* Password - only on create */}
-          {activeTab === "create" && (
-            <div>
-              <label className='block text-sm text-white mb-1'>Password</label>
-              <input
-                type='password'
-                placeholder='Enter password'
-                className='w-full px-3 py-2 rounded bg-[#091521] text-white border border-[#1f2d3d] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm'
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              {/* Role Dropdown */}
+              <div>
+                <label className='block text-sm text-white mb-1'>Role</label>
+                <select
+                  className='w-full px-3 py-2 rounded bg-[#091521] text-white border border-[#1f2d3d] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm'
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                >
+                  <option value='superadmin'>Super Admin</option>
+                  <option value='admin'>Admin</option>
+                  <option value='user'>User</option>
+                </select>
+              </div>
             </div>
-          )}
 
-          {/* Expiry Days - only on invite */}
-          {activeTab === "invite" && (
-            <div>
-              <label className='block text-sm text-white mb-1'>
-                Invitation Expiry
-              </label>
-              <select
-                className='w-full px-3 py-2 rounded bg-[#091521] text-white border border-[#1f2d3d] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm'
-                value={expiryDays}
-                onChange={(e) => setExpiryDays(Number(e.target.value))}
+            {/* Footer Buttons */}
+            <div className='flex justify-end mt-6 gap-2'>
+              <button
+                onClick={onClose}
+                className='px-4 py-2 text-sm bg-[#1f2d3d] text-white rounded hover:bg-[#2b3f56] transition'
+                disabled={loading}
               >
-                <option value={7}>7 Days</option>
-                <option value={14}>14 Days</option>
-                <option value={30}>30 Days</option>
-                <option value={60}>60 Days</option>
-              </select>
-              <p className='text-xs text-gray-400 mt-1'>
-                Invite links will expire after the specified number of days.
-              </p>
+                Cancel
+              </button>
+              <button
+                disabled={!isFormValid() || loading}
+                onClick={handleSubmit}
+                className={`px-4 py-2 text-sm rounded transition ${
+                  isFormValid() && !loading
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                }`}
+              >
+                {loading ? 'Inviting...' : 'Invite'}
+              </button>
             </div>
-          )}
-        </div>
-
-        {/* Footer Buttons */}
-        <div className='flex justify-end mt-6 gap-2'>
-          <button
-            onClick={onClose}
-            className='px-4 py-2 text-sm bg-[#1f2d3d] text-white rounded hover:bg-[#2b3f56] transition'
-          >
-            Cancel
-          </button>
-          <button className='px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition'>
-            {activeTab === "create" ? "Create" : "Invite"}
-          </button>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

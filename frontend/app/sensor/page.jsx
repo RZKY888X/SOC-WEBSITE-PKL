@@ -19,7 +19,7 @@ export default function SensorPage() {
   useEffect(() => {
     async function fetchSensorData() {
       try {
-        const res = await axios.get("http://localhost:3001/api/sensors/desktop");
+        const res = await axios.get("http://localhost:3001/api/sensors");
         const raw = res.data;
 
         const formatted = raw

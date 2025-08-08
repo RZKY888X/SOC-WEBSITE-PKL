@@ -18,6 +18,7 @@ export default function HamburgerMenu() {
     { href: "/sla", label: "Sla" },
     { href: "/account", label: "Account" },
     { href: "/user-management", label: "User Managements" },
+    { href: "/device-management", label: "Deive Managements" }
   ];
 
   return (

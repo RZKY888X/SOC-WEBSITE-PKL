@@ -11,7 +11,7 @@ export default function FooterSection() {
     <footer className='bg-[#0b1622] text-white py-8 text-center text-sm'>
       <div className='container mx-auto space-y-4'>
         <p>
-          © {new Date().getFullYear()} © 2025 Prestasi Prima PKL Team. All rights reserved.
+          © {new Date().getFullYear()} Prestasi Prima PKL Team. All rights reserved.
         </p>
       </div>
     </footer>
