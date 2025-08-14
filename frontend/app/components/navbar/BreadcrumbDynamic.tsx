@@ -15,6 +15,9 @@ import {
 export function BreadcrumbDynamic() {
   const pathname = usePathname();
 
+    if (pathname === "/") return null;
+
+
   const pathArray = pathname
     .split("/")
     .filter(Boolean)

@@ -6,12 +6,24 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 
+interface UserSession {
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: "superadmin" | "admin" | "user";
+}
+
+interface CustomSession {
+  user?: UserSession;
+}
+
 export default function HamburgerMenu() {
-  const { data: session } = useSession();
+  const { data: sessionData } = useSession();
+  const session = sessionData as CustomSession;
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  const role = (session as any)?.user?.role ?? null;
+  const role = session?.user?.role ?? null;
 
   const baseMenu = [
     { href: "/dashboard", label: "Dashboard" },
@@ -29,14 +41,9 @@ export default function HamburgerMenu() {
   let menuItems = [...baseMenu];
 
   if (role === "superadmin") {
-    menuItems.push(ticket);
-    menuItems.push(userManagement);
-    menuItems.push(deviceManagement);
-    
+    menuItems.push(ticket, userManagement, deviceManagement);
   } else if (role === "admin") {
-    menuItems.push(ticket);
-    menuItems.push(deviceManagement);
-    
+    menuItems.push(ticket, deviceManagement);
   } else if (role === "user") {
     // Tidak menambah apapun
   } else {
@@ -75,7 +82,6 @@ export default function HamburgerMenu() {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
-            {/* Logo dari file zip lama */}
             <Image src="/Pressoc.png" alt="Logo" width={40} height={40} />
             <span className="text-2xl font-bold">PRESSOC</span>
           </div>
@@ -108,44 +114,38 @@ export default function HamburgerMenu() {
 
         {/* Footer sidebar */}
         <div className="p-6 border-t border-white/10 flex justify-between items-center">
-          {/* Username & Role di kiri bawah */}
           {session?.user && (
             <div className="text-sm opacity-90">
-              <div>{(session as any).user.name ?? (session as any).user.email}</div>
+              <div>{session.user.name ?? session.user.email}</div>
               <div className="capitalize">Role: {role ?? "-"}</div>
             </div>
           )}
 
+          {/* Tombol logout */}
+          <button
+            onClick={async () => {
+              try {
+                const userId = session?.user?.id;
+                const username = session?.user?.name ?? session?.user?.email ?? "";
 
-{/* Tombol logout di kanan bawah */}
-<button
-  onClick={async () => {
-    try {
-      // Ambil data user dari session
-      const userId = (session as any)?.user?.id;
-      const username = (session as any)?.user?.name ?? (session as any)?.user?.email ?? "";
+                await fetch("http://localhost:3001/logout", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ userId, username }),
+                });
 
-      // Kirim log logout ke backend
-      await fetch("http://localhost:3001/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, username }),
-      });
+                await signOut({ callbackUrl: "/login" });
+              } catch (error) {
+                console.error("Logout error:", error);
+                await signOut({ callbackUrl: "/login" });
+              }
 
-      // Setelah sukses simpan log → signOut NextAuth
-      await signOut({ callbackUrl: "/login" });
-    } catch (error) {
-      console.error("Logout error:", error);
-      await signOut({ callbackUrl: "/login" }); // fallback
-    }
-
-    setIsOpen(false);
-  }}
-  className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
->
-  Logout
-</button>
-
+              setIsOpen(false);
+            }}
+            className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </>

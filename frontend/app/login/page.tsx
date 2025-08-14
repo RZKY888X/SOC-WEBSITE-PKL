@@ -1,47 +1,41 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
 
-    // Ambil userAgent dari browser
-    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "Unknown";
+    const result = await signIn("credentials", {
+      redirect: false,
+      username,
+      password,
+      callbackUrl: "/dashboard",
+    });
 
-    try {
-      const res = await fetch("http://localhost:3001/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ username, password, userAgent }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Login gagal");
-        return;
-      }
-
+    if (result?.error) {
+      setError("Username atau password salah");
+    } else {
       window.location.href = "/dashboard";
-    } catch (err) {
-      setError("Terjadi kesalahan jaringan");
-      console.error(err);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0D1725] text-white">
       <div className="w-full max-w-sm bg-[#0D1725] p-8 rounded-md shadow-lg border border-[#1C2A3A]">
-        <h1 className="text-center text-xl font-semibold mb-6 tracking-wide">PRESSOC</h1>
+        <h1 className="text-center text-xl font-semibold mb-6 tracking-wide">
+          PRESSOC
+        </h1>
         <form onSubmit={handleLogin}>
-          {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
+          {error && (
+            <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+          )}
           <div className="mb-4">
             <label className="block text-sm mb-1">Username</label>
             <input

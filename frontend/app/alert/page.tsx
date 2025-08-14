@@ -3,17 +3,31 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 
+interface Sensor {
+  sensor: string;
+  device: string;
+  status: number;
+  lastvalue: string;
+  timestamp: string;
+}
+
 export default function AlertPage() {
-  const [alerts, setAlerts] = useState([]);
+  const [alerts, setAlerts] = useState<Sensor[]>([]);
 
   useEffect(() => {
     async function fetchAlerts() {
       try {
-        const res = await axios.get('http://localhost:3001/api/sensors/');
+        const res = await axios.get<Sensor[]>('http://localhost:3001/api/sensors/');
         const sensors = res.data;
 
         // Filter hanya sensor yang status-nya bukan "3" (3 = OK)
-        const downSensors = sensors.filter((s) => s.status !== 3);
+        // dan hapus duplikat berdasarkan nama sensor
+        const downSensors = sensors
+          .filter((s: Sensor) => s.status !== 3)
+          .filter(
+            (value, index, self) =>
+              index === self.findIndex((t) => t.sensor === value.sensor)
+          );
 
         setAlerts(downSensors);
       } catch (err) {
@@ -26,10 +40,11 @@ export default function AlertPage() {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white font-sans">
-
       <main className="p-6">
         <div className="bg-[#1e293b] rounded-xl p-6">
-          <h2 className="text-xl font-semibold mb-4 text-red-500">Alerts (Sensor Down)</h2>
+          <h2 className="text-xl font-semibold mb-4 text-red-500">
+            Alerts (Sensor Down)
+          </h2>
           {alerts.length === 0 ? (
             <p className="text-white">Tidak ada sensor yang down</p>
           ) : (
@@ -41,7 +56,9 @@ export default function AlertPage() {
                 >
                   <p className="text-lg font-semibold text-red-400">{alert.sensor}</p>
                   <p className="text-sm text-gray-300">Device: {alert.device}</p>
-                  <p className="text-sm text-gray-300">Status: {alert.status === 0 ? 'Down' : 'Warning'}</p>
+                  <p className="text-sm text-gray-300">
+                    Status: {alert.status === 0 ? 'Down' : 'Warning'}
+                  </p>
                   <p className="text-sm text-gray-400">Last Value: {alert.lastvalue}</p>
                   <p className="text-sm text-gray-500">
                     Terakhir update: {new Date(alert.timestamp).toLocaleString()}
