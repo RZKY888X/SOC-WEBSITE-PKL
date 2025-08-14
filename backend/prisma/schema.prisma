@@ -8,16 +8,18 @@ datasource db {
 }
 
 model User {
-  id              String   @id @default(cuid())
-  username        String?  @unique
-  email           String   @unique
+  id              String     @id @default(cuid())
+  username        String?    @unique
+  email           String     @unique
   password        String?
   name            String?
-  role            String   @default("user")
-  isActivated     Boolean  @default(false)
+  role            String     @default("user")
+  isActivated     Boolean    @default(false)
   activationToken String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  logs            UserLog[]  // Relasi ke UserLog
 }
 
 model sensors {
@@ -36,5 +38,17 @@ model sensor_logs {
   device    String?
   sensor    String?
   value     String?
-  timestamp DateTime? @default(now())
+  timestamp DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model UserLog {
+  id        Int      @id @default(autoincrement())
+  userId    String?  
+  username  String?
+  action    String
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id])
 }

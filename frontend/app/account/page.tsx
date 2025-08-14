@@ -21,7 +21,6 @@ export default function DashboardPage() {
       <div className="bg-[#1c2530] p-6 rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Account Settings</h2>
-          <Pencil className="w-5 h-5 text-white cursor-pointer" />
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-sm sm:text-base">
@@ -29,22 +28,13 @@ export default function DashboardPage() {
           <div>{session?.user?.name || "Tidak diketahui"}</div>
 
           <div className="text-gray-400">Role :</div>
-          <div className="italic">Super Admin</div>
+          <div className="italic">
+            {session?.user?.role || "Tidak diketahui"}
+          </div>
 
           <div className="text-gray-400">Email Address :</div>
-          <div className="italic">{session?.user?.email || "Tidak diketahui"}</div>
-
-          <div className="text-gray-400">Last Login :</div>
           <div className="italic">
-            {new Date().toLocaleString("en-US", {
-              month: "numeric",
-              day: "numeric",
-              year: "numeric",
-              hour: "numeric",
-              minute: "numeric",
-              second: "numeric",
-              hour12: false,
-            })}
+            {session?.user?.email || "Tidak diketahui"}
           </div>
         </div>
       </div>

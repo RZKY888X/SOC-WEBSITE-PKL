@@ -4,7 +4,9 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-import slaLogsRoutes from "./api/sla-logs/route.js"; // ⬅️ Import router SLA logs
+import slaLogsRoutes from "./api/sla-logs/route.js";
+import axios from 'axios';
+
 
 dotenv.config();
 
@@ -15,15 +17,30 @@ const prisma = new PrismaClient();
 app.use(cors());
 app.use(express.json());
 
-// ==================== LOGIN ====================
+/* ==================== LOGIN ==================== */
 app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, userAgent } = req.body; // terima userAgent dari frontend
   try {
     const user = await prisma.user.findUnique({ where: { username } });
     if (!user) return res.status(401).json({ error: "User not found" });
 
+    if (!user.password) {
+      return res.status(401).json({ error: "User has no password set" });
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) return res.status(401).json({ error: "Invalid credentials" });
+
+    // Simpan log login dengan userAgent dari body dulu, kalau kosong pakai header req
+    await prisma.UserLog.create({
+      data: {
+        userId: user.id,
+        username: user.username || "",
+        action: "login",
+        ip: req.ip || "",
+        userAgent: userAgent || req.headers["user-agent"] || "",
+      },
+    });
 
     res.json({
       id: user.id,
@@ -37,8 +54,33 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// ==================== USERS ====================
-// GET all users
+/* ==================== LOGOUT ==================== */
+app.post("/logout", async (req, res) => {
+  try {
+    const { userId, username, userAgent } = req.body; // terima userAgent dari frontend
+
+    if (!userId || !username) {
+      return res.status(400).json({ error: "User ID and username are required" });
+    }
+
+    await prisma.UserLog.create({
+      data: {
+        userId,
+        username,
+        action: "logout",
+        ip: req.ip || "",
+        userAgent: userAgent || req.headers["user-agent"] || "",
+      },
+    });
+
+    res.json({ success: true, message: "User logged out" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/* ==================== USERS ==================== */
 app.get("/api/user", async (req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -60,7 +102,6 @@ app.get("/api/user", async (req, res) => {
   }
 });
 
-// DELETE user
 app.delete("/api/user/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -72,7 +113,7 @@ app.delete("/api/user/:id", async (req, res) => {
   }
 });
 
-// ==================== INVITATION ====================
+/* ==================== INVITATION ==================== */
 app.post("/api/invitation", async (req, res) => {
   const { email, role } = req.body;
 
@@ -130,7 +171,7 @@ app.post("/api/invitation", async (req, res) => {
   }
 });
 
-// ==================== ACTIVATION ====================
+/* ==================== ACTIVATION ==================== */
 app.post("/api/activate", async (req, res) => {
   const { token, username, password, name } = req.body;
 
@@ -167,8 +208,7 @@ app.post("/api/activate", async (req, res) => {
   }
 });
 
-// ==================== SENSOR DATA ====================
-// Get all sensors
+/* ==================== SENSOR DATA ==================== */
 app.get("/api/sensors", async (req, res) => {
   try {
     const sensors = await prisma.sensors.findMany();
@@ -179,7 +219,6 @@ app.get("/api/sensors", async (req, res) => {
   }
 });
 
-// Get all sensor logs
 app.get("/api/sensor_logs", async (req, res) => {
   try {
     const logs = await prisma.sensor_logs.findMany();
@@ -190,10 +229,136 @@ app.get("/api/sensor_logs", async (req, res) => {
   }
 });
 
-// ==================== SLA LOGS ROUTES ====================
+/* ==================== USER LOGS ==================== */
+app.get("/api/user-logs", async (req, res) => {
+  try {
+    const logs = await prisma.UserLog.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(logs);
+  } catch (error) {
+    console.error("Error fetching user logs:", error);
+    res.status(500).json({ error: "Failed to fetch user logs" });
+  }
+});
+
+/* ==================== SLA LOGS ==================== */
 app.use("/api/sla-logs", slaLogsRoutes);
 
-// ==================== START SERVER ====================
+const PRTG_HOST = process.env.PRTG_HOST;
+const PRTG_USERNAME = process.env.PRTG_USERNAME;
+const PRTG_PASSHASH = process.env.PRTG_PASSHASH;
+
+/* ==================== DEVICE CRUD (PRTG API Proxy) ==================== */
+
+// GET /api/devices : Ambil daftar device dari PRTG
+app.get("/api/devices", async (req, res) => {
+  try {
+    const url = `${PRTG_HOST}/api/table.json`;
+    const params = new URLSearchParams({
+      content: "devices",
+      output: "json",
+      columns: "objid,device,parentid,status",
+      username: PRTG_USERNAME,
+      passhash: PRTG_PASSHASH,
+    });
+
+    const prtgRes = await axios.get(`${url}?${params.toString()}`);
+
+    // PRTG response biasanya di prtgRes.data.devices, tapi cek dulu struktur
+    if (prtgRes.data.devices) {
+      return res.json(prtgRes.data.devices);
+    }
+    return res.json(prtgRes.data);
+  } catch (error) {
+    console.error("Error fetching devices from PRTG:", error.message || error);
+    return res.status(500).json({ error: "Failed to fetch devices from PRTG" });
+  }
+});
+
+// POST /api/devices : Tambah device baru ke PRTG
+app.post("/api/devices", async (req, res) => {
+  const { name, parentId } = req.body;
+  if (!name || !parentId) {
+    return res.status(400).json({ error: "Name and parentId are required" });
+  }
+
+  try {
+    const url = `${PRTG_HOST}/api/adddevice.htm`;
+    const params = new URLSearchParams({
+      name,
+      parentid: parentId,
+      username: PRTG_USERNAME,
+      passhash: PRTG_PASSHASH,
+    });
+
+    const prtgRes = await axios.get(`${url}?${params.toString()}`);
+
+    if (prtgRes.data.includes("<error>0</error>")) {
+      return res.json({ success: true, message: "Device added successfully" });
+    } else {
+      return res.status(500).json({ error: "Failed to add device in PRTG" });
+    }
+  } catch (error) {
+    console.error("Error adding device to PRTG:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /api/devices/:id : Update device di PRTG
+app.put("/api/devices/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "Name is required" });
+
+  try {
+    const url = `${PRTG_HOST}/api/editdevice.htm`;
+    const params = new URLSearchParams({
+      id,
+      name,
+      username: PRTG_USERNAME,
+      passhash: PRTG_PASSHASH,
+    });
+
+    const prtgRes = await axios.get(`${url}?${params.toString()}`);
+
+    if (prtgRes.data.includes("<error>0</error>")) {
+      return res.json({ success: true, message: "Device updated successfully" });
+    } else {
+      return res.status(500).json({ error: "Failed to update device" });
+    }
+  } catch (error) {
+    console.error("Error updating device:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /api/devices/:id : Delete device di PRTG
+app.delete("/api/devices/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const url = `${PRTG_HOST}/api/deletedevice.htm`;
+    const params = new URLSearchParams({
+      id,
+      username: PRTG_USERNAME,
+      passhash: PRTG_PASSHASH,
+    });
+
+    const prtgRes = await axios.get(`${url}?${params.toString()}`);
+
+    if (prtgRes.data.includes("<error>0</error>")) {
+      return res.json({ success: true, message: "Device deleted successfully" });
+    } else {
+      return res.status(500).json({ error: "Failed to delete device" });
+    }
+  } catch (error) {
+    console.error("Error deleting device:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/* ==================== START SERVER ==================== */
 app.listen(PORT, () => {
   console.log(`✅ Server backend berjalan di http://localhost:${PORT}`);
 });

@@ -4,85 +4,96 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { useSession, signOut } from "next-auth/react";
 
 export default function HamburgerMenu() {
+  const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  const menuItems = [
+  const role = (session as any)?.user?.role ?? null;
+
+  const baseMenu = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/device", label: "Devices" },
     { href: "/sensor", label: "Sensors" },
     { href: "/alert", label: "Alerts" },
-    { href: "/ticket", label: "Ticket" },
-    { href: "/sla", label: "Sla" },
+    { href: "/sla", label: "SLA" },
     { href: "/account", label: "Account" },
-    { href: "/user-management", label: "User Managements" },
-    { href: "/device-management", label: "Deive Managements" }
   ];
+
+  const userManagement = { href: "/user-management", label: "User Managements" };
+  const deviceManagement = { href: "/device-management", label: "Device Managements" };
+  const ticket = { href: "/ticket", label: "Ticket" };
+
+  let menuItems = [...baseMenu];
+
+  if (role === "superadmin") {
+    menuItems.push(ticket);
+    menuItems.push(userManagement);
+    menuItems.push(deviceManagement);
+    
+  } else if (role === "admin") {
+    menuItems.push(ticket);
+    menuItems.push(deviceManagement);
+    
+  } else if (role === "user") {
+    // Tidak menambah apapun
+  } else {
+    menuItems = [
+      { href: "/login", label: "Login" },
+      { href: "/dashboard", label: "Dashboard" },
+    ];
+  }
 
   return (
     <>
-      {/* Hamburger Button */}
+      {/* Tombol hamburger */}
       <button
         onClick={() => setIsOpen(true)}
-        className='z-50 relative space-y-1 text-white text-3xl p-2'
-        aria-label='Open menu'
+        className="p-2 rounded-md bg-transparent border border-white/10"
+        aria-label="Open menu"
       >
-        <span className='block h-1 w-6 bg-amber-50' />
-        <span className='block h-1 w-6 bg-amber-50' />
-        <span className='block h-1 w-6 bg-amber-50' />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
       </button>
 
-      {/* Overlay */}
+      {/* Sidebar */}
       <div
-        className={`fixed inset-0 z-40 transition-opacity duration-300 ${
-          isOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-        }`}
-        onClick={() => setIsOpen(false)}
-      />
-
-      {/* Side Menu */}
-      <div
-        className={`fixed top-0 right-0 h-screen w-64 bg-[#030E1C] shadow-lg z-50 transform transition-transform duration-300 ${
+        className={`fixed top-0 right-0 h-full w-80 bg-[#071323] text-white z-50 transform ${
           isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        } transition-transform duration-200 flex flex-col`}
+        aria-hidden={!isOpen}
       >
-        <div className='flex justify-end p-4'>
-          <button
-            onClick={() => setIsOpen(false)}
-            className='text-white text-4xl hover:text-red-400'
-            aria-label='Close menu'
-          >
-            &times;
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            {/* Logo dari file zip lama */}
+            <Image src="/Pressoc.png" alt="Logo" width={40} height={40} />
+            <span className="text-2xl font-bold">PRESSOC</span>
+          </div>
+          <button onClick={() => setIsOpen(false)} aria-label="Close menu">
+            ✕
           </button>
         </div>
 
-        <ul className='flex-grow flex flex-col items-center justify-start text-white text-base w-full space-y-2'>
-          {/* Logo di atas Dashboard */}
-          <div className="mb-4">
-            <Image
-              src='/Pressoc.png'
-              alt='Logo'
-              width={200}
-              height={200}
-              className='object-contain border border-[#5d7bb6] rounded-2xl'
-              priority
-            />
-            <hr className="mt-6 border-t border-[#5d7bb6] w-full opacity-50"/>
-          </div>
-
-
+        {/* Menu */}
+        <ul className="flex-1 p-6 space-y-3 overflow-y-auto">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
-
             return (
-              <li key={item.href} className='text-center'>
+              <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`block text-2xl font-medium py-2 transition-all ${
+                  onClick={() => setIsOpen(false)}
+                  className={`block py-2 px-3 rounded ${
                     isActive
                       ? "text-[#5d7bb6] border-b-2 border-[#5d7bb6]"
                       : "hover:text-[#5d7bb6]"
@@ -94,6 +105,48 @@ export default function HamburgerMenu() {
             );
           })}
         </ul>
+
+        {/* Footer sidebar */}
+        <div className="p-6 border-t border-white/10 flex justify-between items-center">
+          {/* Username & Role di kiri bawah */}
+          {session?.user && (
+            <div className="text-sm opacity-90">
+              <div>{(session as any).user.name ?? (session as any).user.email}</div>
+              <div className="capitalize">Role: {role ?? "-"}</div>
+            </div>
+          )}
+
+
+{/* Tombol logout di kanan bawah */}
+<button
+  onClick={async () => {
+    try {
+      // Ambil data user dari session
+      const userId = (session as any)?.user?.id;
+      const username = (session as any)?.user?.name ?? (session as any)?.user?.email ?? "";
+
+      // Kirim log logout ke backend
+      await fetch("http://localhost:3001/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, username }),
+      });
+
+      // Setelah sukses simpan log → signOut NextAuth
+      await signOut({ callbackUrl: "/login" });
+    } catch (error) {
+      console.error("Logout error:", error);
+      await signOut({ callbackUrl: "/login" }); // fallback
+    }
+
+    setIsOpen(false);
+  }}
+  className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+>
+  Logout
+</button>
+
+        </div>
       </div>
     </>
   );
