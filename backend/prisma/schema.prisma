@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model User {
+  id              String     @id @default(cuid())
+  username        String?    @unique
+  email           String     @unique
+  password        String?
+  name            String?
+  role            String     @default("user")
+  isActivated     Boolean    @default(false)
+  activationToken String?
+  activationTime             DateTime?
+  isTrial         Boolean    @default(false)
+  // ⬇️ Durasi langganan aktif setelah aktivasi (menit). Contoh: 30 menit
+  subscriptionDurationMinutes Int?
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  logs            UserLog[]
+  // Relasi ke SubscriptionProfile (opsional, 1 user bisa tercatat dari 1 profil pendaftaran)
+  subscriptionProfiles SubscriptionProfile[]
+}
+
+model SubscriptionProfile {
+  id           String   @id @default(cuid())
+  plan         String
+  price        Int      // simpen sebagai integer (misal dalam USD tanpa desimal). Kalau mau decimal: Decimal @db.Decimal(10,2)
+  companyName  String
+  fullName     String
+  city         String
+  country      String
+  createdAt    DateTime @default(now())
+
+  // Akan terisi setelah invite sukses (user dibuat)
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id])
+}
+
+model sensors {
+  id        Int       @id @default(autoincrement())
+  objid     Int?
+  device    String?
+  sensor    String?
+  lastvalue String?
+  status    String?
+  message   String?
+  timestamp DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model sensor_logs {
+  id        Int       @id @default(autoincrement())
+  device    String?
+  sensor    String?
+  value     String?
+  timestamp DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model UserLog {
+  id        Int      @id @default(autoincrement())
+  userId    String?
+  username  String?
+  action    String
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model Device {
+  id        String   @id @default(cuid())
+  prtgId    String?  // objid dari PRTG (boleh null kalau manual tambah device)
+  name      String
+  type      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
