@@ -1,3 +1,4 @@
+// Features.tsx
 "use client";
 
 import Image from "next/image";
@@ -6,23 +7,23 @@ import { motion } from "framer-motion";
 const features = [
   {
     icon: "/icons/MonitoringIcon.png",
-    title: "Monitoring Performance",
-    desc: "Uptime server, beban CPU, penggunaan memori, bandwidth, status aplikasi",
+    title: "Performance Monitoring",
+    desc: "Track server uptime, CPU load, memory usage, bandwidth, and app health.",
   },
   {
     icon: "/icons/SecurityIcon.png",
-    title: "Monitoring Security",
-    desc: "Deteksi intrusi, anomali log, MITRE ATT&CK mapping, alert berbasis rule",
+    title: "Security Monitoring",
+    desc: "Detect intrusions, analyze log anomalies, map to MITRE ATT&CK, and rule-based alerts.",
   },
   {
     icon: "/icons/AlertIcon.png",
-    title: "Alert Cerdas",
-    desc: "Notifikasi otomatis saat performa dan keamanan menunjukan potensi masalah",
+    title: "Smart Alerts",
+    desc: "Automated notifications when performance or security issues are detected.",
   },
   {
     icon: "/icons/KorelasiIcon.png",
-    title: "Korelasi Data",
-    desc: "Context: CPU usage melonjak + brute force detected = potensi kompromi serius",
+    title: "Data Correlation",
+    desc: "Example: High CPU usage + brute force attempts = potential compromise.",
   },
 ];
 
@@ -33,10 +34,10 @@ export default function Features() {
         initial={{ opacity: 0, y: -50 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        viewport={{ once: false }} // bisa animasi lagi saat scroll naik
+        viewport={{ once: false }}
         className="text-3xl font-bold text-center mb-14"
       >
-        Solusi dari <span className="text-[#3BAFDA]">PRESSOC</span>
+        Solutions from <span className="text-[#3BAFDA]">PRESSOC</span>
       </motion.h2>
 
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">

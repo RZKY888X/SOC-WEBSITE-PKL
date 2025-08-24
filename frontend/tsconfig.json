@@ -22,6 +22,17 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/components/navbar/HamburgerMenu.tsx", "app/api/auth/[...nextauth]/sla-logs.js", "app/components/dashboard/page.jsx", "app/ticket/page.jsx", "app/sensor/page.jsx", "app/api/auth/[...nextauth]/route.js"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "app/components/navbar/HamburgerMenu.tsx",
+    "app/api/auth/[...nextauth]/sla-logs.js",
+    "app/dashboard/components/dashboard/page.jsx",
+    "app/ticket/page.jsx",
+    "app/sensor/page.jsx",
+    "app/api/auth/[...nextauth]/route.js"
+  ],
   "exclude": ["node_modules"]
 }
