@@ -1,7 +1,9 @@
+//device/page.tsx//
 'use client';
 
 import { useEffect, useState } from 'react';
 import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import CardAddDevice from '../components/dashboard/CardAddDevice';
 
 type Sensor = {
   device: string;
@@ -18,6 +20,7 @@ type DeviceMap = {
 
 export default function DevicePage() {
   const [devices, setDevices] = useState<DeviceMap>({});
+  const [showAddDevice, setShowAddDevice] = useState(false);
 
   useEffect(() => {
     const fetchDevices = async () => {
@@ -25,7 +28,6 @@ export default function DevicePage() {
         const res = await fetch('http://localhost:3001/api/sensors');
         const data: Sensor[] = await res.json();
 
-        // Kelompokkan sensor unik per device
         const grouped: DeviceMap = {};
         const seen = new Set<string>();
 
@@ -45,7 +47,6 @@ export default function DevicePage() {
 
           grouped[device].sensors.push(sensor);
 
-          // Update status device
           if (status === 'Warning' && grouped[device].status !== 'Down') {
             grouped[device].status = 'Warning';
           }
@@ -79,32 +80,48 @@ export default function DevicePage() {
   return (
     <div className="min-h-screen bg-[#0f172a] text-white font-sans">
       <main className="p-6">
-        <h2 className="text-2xl font-bold mb-6">Devices</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">PRESOC</h2>
+          <button
+            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm"
+            onClick={() => setShowAddDevice(true)}
+          >
+            Add Device
+          </button>
+        </div>
 
-        {/* Grid 2 Kolom */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-[#1e293b] rounded-xl p-4 shadow-md">
+          <div className="grid grid-cols-3 font-semibold text-sm border-b border-gray-600 pb-2 mb-2">
+            <div>Status</div>
+            <div>Devices</div>
+            <div>Sensors</div>
+          </div>
+
           {Object.entries(devices).map(([deviceName, { sensors, status }]) => {
             const { color, icon } = getStatusDetails(status);
 
             return (
               <div
                 key={deviceName}
-                className="bg-[#1e293b] rounded-xl p-6 shadow-lg border border-gray-700 hover:bg-[#334155] transition"
+                className="grid grid-cols-3 text-sm items-center border-t border-gray-700 py-2"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">{deviceName}</h3>
-                  <span className={`${color} flex items-center gap-1`}>
-                    {icon}
-                    {status}
-                  </span>
+                <div className={`flex items-center gap-2 ${color}`}>
+                  {icon} {status}
                 </div>
-
-                <p className="text-sm text-gray-400 mb-2">Jumlah Sensor</p>
-                <p className="text-2xl font-bold">{sensors.length}</p>
+                <div className="text-blue-400 underline">{deviceName}</div>
+                <div>{sensors.length}</div>
               </div>
             );
           })}
         </div>
+
+        {showAddDevice && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div className="bg-[#0f172a] p-6 rounded-lg w-full max-w-xl border border-blue-500">
+              <CardAddDevice onCancel={() => setShowAddDevice(false)} />
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

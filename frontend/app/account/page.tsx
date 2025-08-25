@@ -1,10 +1,14 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { LogOut, Pencil } from "lucide-react";
+import { LogOut } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
+
+  const plan = searchParams.get("plan") || "User";
 
   const handleLogout = () => {
     signOut({ callbackUrl: "/login" });
@@ -35,6 +39,11 @@ export default function DashboardPage() {
           <div className="text-gray-400">Email Address :</div>
           <div className="italic">
             {session?.user?.email || "Tidak diketahui"}
+          </div>
+
+          <div className="text-gray-400">Plan Account :</div>
+          <div className="italic">
+            {plan}
           </div>
         </div>
       </div>
